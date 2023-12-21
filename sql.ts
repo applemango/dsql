@@ -34,10 +34,14 @@ export const id = () =>  new SchemaType("INTEGER").primary().autoIncrement()
 
 class TableClass<T> {
     table: TableType<T>
-    constructor(table: TableType<T>) {
+    label: string
+    constructor(label: string, table: TableType<T>) {
         this.table = table
+        this.label = label
     }
     get(key: any) {
+        const primaryKey = Object.keys(this.table as any).filter((key) => this.table[key].option.primary)[0] as any
+        return `SELECT * FROM ${this.label} WHERE ${primaryKey} = ${key}`
     }
     insert(obj: {
         [key in keyof T]?: T[key];
@@ -59,7 +63,7 @@ export const TableClassProxy = <T>(table: TableClass<T>): {
     }) as any;
 }
 
-export const Table = <T>(table: TableType<T>) => TableClassProxy(new TableClass(table))
+export const Table = <T>(label: string, table: TableType<T>) => TableClassProxy(new TableClass(label, table))
 
 class Sql {
     constructor() {

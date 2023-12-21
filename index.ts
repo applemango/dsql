@@ -1,11 +1,9 @@
 import { Table, id, text } from "./sql";
 
-const user = Table({
+const user = Table("user", {
     id: id(),
     email: text(),
     password: text()
 })
 
-user.insert({
-    email: "string",
-})
+console.log(user.get(1))
