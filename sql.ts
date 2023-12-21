@@ -34,14 +34,13 @@ export const id = () =>  new SchemaType("INTEGER").primary().autoIncrement()
 
 class TableClass<T> {
     table: TableType<T>
-    label: string
-    constructor(label: string, table: TableType<T>) {
+    constructor(table: TableType<T>) {
         this.table = table
-        this.label = label
     }
     get(key: any) {
-        const primaryKey = Object.keys(this.table as any).filter((key) => this.table[key].option.primary)[0] as any
-        return `SELECT * FROM ${this.label} WHERE ${primaryKey} = ${key}`
+        return undefined as any
+        //const primaryKey = Object.keys(this.table as any).filter((key) => this.table[key].option.primary)[0] as any
+        //return `SELECT * FROM ${this.label} WHERE ${primaryKey} = ${key}`
     }
     insert(obj: {
         [key in keyof T]?: T[key];
@@ -50,9 +49,10 @@ class TableClass<T> {
     }
 }
 
-export const TableClassProxy = <T>(table: TableClass<T>): {
+type TableClassProxyResult<T> = {
     [key in keyof T]: SchemaType;
-} & TableClass<T> => {
+} & TableClass<T>
+export const TableClassProxy = <T>(table: TableClass<T>): TableClassProxyResult<T> => {
     return new Proxy(table, {
         get: function(target, prop, receiver) {
             if(prop in table.table) {
@@ -63,10 +63,16 @@ export const TableClassProxy = <T>(table: TableClass<T>): {
     }) as any;
 }
 
-export const Table = <T>(label: string, table: TableType<T>) => TableClassProxy(new TableClass(label, table))
+export const Table = <T>(table: TableType<T>) => TableClassProxy(new TableClass(table))
 
-class Sql {
-    constructor() {
+export class DatabaseClass<T> {
+    constructor(obj: {
+        [key: string]: any
+    }) {
 
     }
 }
+type DatabaseClassProxyResult<T> = {
+    [key in keyof T]: TableClassProxyResult<T>;
+}
+export const Database = <T>(obj: T): DatabaseClassProxyResult<T> => new DatabaseClass(obj as any) as any
