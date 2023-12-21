@@ -34,10 +34,15 @@ export const id = () =>  new SchemaType("INTEGER").primary().autoIncrement()
 
 class TableClass<T> {
     table: TableType<T>
-    comment: string
     constructor(table: TableType<T>) {
         this.table = table
-        this.comment = "Hello, world!"
+    }
+    get(key: any) {
+    }
+    insert(obj: {
+        [key in keyof T]?: T[key];
+    }) {
+
     }
 }
 

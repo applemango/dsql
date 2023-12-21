@@ -6,5 +6,6 @@ const user = Table({
     password: text()
 })
 
-console.log(user.id)
-console.log(user.comment)
+user.insert({
+    email: "string",
+})
