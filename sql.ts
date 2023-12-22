@@ -127,7 +127,7 @@ export class DatabaseClass<T> {
     }
 }
 type DatabaseClassProxyResult<T> = {
-    [key in keyof T]: Table;
+    [key in keyof T]: T[key];
 } & DatabaseClass<T>
 export const DatabaseClassProxy = <T>(tables: DatabaseClass<T>): DatabaseClassProxyResult<T> => {
     return new Proxy(tables, {
