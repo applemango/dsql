@@ -63,12 +63,20 @@ class TableClass<T> {
     getPrimaryKey() {
         return Object.keys(this.table).filter((key) => this.table[key].option.primary)[0]
     }
+    map(fn: (table: SchemaType, key: string, i: number)=> Promise<any> | any) {
+        return Object.keys(this.table).map((key, i) => fn(this.table[key], key, i))
+    }
     async get(key: any): Promise<ObjItemOption<T>> {
         const primaryKey = this.getPrimaryKey()
         const res = await this.context.execute(`SELECT * FROM ${this.context.name} WHERE ${primaryKey} = ?`, [key])
-        return res
+        return res[0]
     }
-    insert(obj: ObjItemOption<T>) {
+    async insert(obj: ObjItemOption<T>) {
+        await this.context.execute(
+            `INSERT INTO ${this.context.name} (
+                ${Object.keys(obj).join(", ")}
+            ) VALUES ( ${Object.values(obj).map(()=> "?")} )`
+        , Object.values(obj))
     }
     async sync() {
     }
