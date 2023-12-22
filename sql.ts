@@ -32,19 +32,25 @@ class SchemaType {
 export const text = () => new SchemaType("TEXT")
 export const id = () =>  new SchemaType("INTEGER").primary().autoIncrement()
 
+
+type ObjItemOption<T> =  {
+    [key in keyof T]?: T[key];
+}
 class TableClass<T> {
     table: TableType<T>
+    context: {
+        execute: (query: string, args: any[]) => Promise<any>
+    }
     constructor(table: TableType<T>) {
         this.table = table
     }
-    get(key: any) {
+    get(key: any): ObjItemOption<T> {
+        this.context.execute("SELECT * FROM user WHERE user_id = ?", [key])
         return undefined as any
         //const primaryKey = Object.keys(this.table as any).filter((key) => this.table[key].option.primary)[0] as any
         //return `SELECT * FROM ${this.label} WHERE ${primaryKey} = ${key}`
     }
-    insert(obj: {
-        [key in keyof T]?: T[key];
-    }) {
+    insert(obj: ObjItemOption<T>) {
 
     }
 }
@@ -65,14 +71,28 @@ export const TableClassProxy = <T>(table: TableClass<T>): TableClassProxyResult<
 
 export const Table = <T>(table: TableType<T>) => TableClassProxy(new TableClass(table))
 
+type Tables = {
+    [key: string]: any
+}
 export class DatabaseClass<T> {
-    constructor(obj: {
-        [key: string]: any
-    }) {
-
+    tables: Tables
+    constructor(obj: Tables) {
+        this.tables = obj
     }
 }
-type DatabaseClassProxyResult<T> = {
-    [key in keyof T]: TableClassProxyResult<T>;
+export const DatabaseClassProxy = (tables: DatabaseClass<Tables>) => {
+    return new Proxy(tables, {
+        get(target, prop, receiver) {
+            if(prop in tables.tables) {
+                target.tables[prop as any].context = {
+                    execute: (query: string, args: any[]) => {
+                        console.log("EXECUTE: ", query, args)
+                    }
+                }
+                return Reflect.get(target.tables, prop, receiver);
+            }
+            return Reflect.get(target, prop, receiver);
+        },
+    })
 }
-export const Database = <T>(obj: T): DatabaseClassProxyResult<T> => new DatabaseClass(obj as any) as any
+export const Database = (obj: any): any => DatabaseClassProxy(new DatabaseClass(obj))
