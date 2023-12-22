@@ -60,17 +60,17 @@ class TableClass<T> {
     constructor(table: TableType<T>) {
         this.table = table
     }
+    getPrimaryKey() {
+        return Object.keys(this.table).filter((key) => this.table[key].option.primary)[0]
+    }
     async get(key: any): Promise<ObjItemOption<T>> {
-        const primaryKey = Object.keys(this.table as any).filter((key) => this.table[key].option.primary)[0] as any
+        const primaryKey = this.getPrimaryKey()
         const res = await this.context.execute(`SELECT * FROM ${this.context.name} WHERE ${primaryKey} = ?`, [key])
         return res
-        //return `SELECT * FROM ${this.label} WHERE ${primaryKey} = ${key}`
     }
     insert(obj: ObjItemOption<T>) {
-
     }
     async sync() {
-
     }
 }
 
@@ -91,19 +91,20 @@ export const TableClassProxy = <T>(table: TableClass<T>): TableClassProxyResult<
 export const Table = <T>(table: TableType<T>) => TableClassProxy(new TableClass(table))
 
 type Table = TableClass<any>
+type DatabaseClassOptions = ObjItemOption<{
+    execute: (query: string, args: any[]) => Promise<any>,
+}>
 export class DatabaseClass<T> {
     tables: {
         [key in keyof T]: Table;
     }
     constructor(obj: {
         [key in keyof T]: Table;
-    }) {
+    }, options?: DatabaseClassOptions) {
         this.tables = obj
         this.map((table, key)=> {
             table.context = {
-                execute: async (query: string, args: any[]) => {
-                    console.log("EXECUTE: ", query, args)
-                },
+                execute: options?.execute || (async (query: string, args: any[]) => {}),
                 name: key
             }
         })
@@ -130,4 +131,4 @@ export const DatabaseClassProxy = <T>(tables: DatabaseClass<T>): DatabaseClassPr
         },
     }) as any
 }
-export const Database = <T>(obj: T) => DatabaseClassProxy<T>(new DatabaseClass(obj as any))
+export const Database = <T>(obj: T, options?: DatabaseClassOptions) => DatabaseClassProxy<T>(new DatabaseClass(obj as any, options))
