@@ -1,6 +1,4 @@
-type TableType<T> = {
-    [key in keyof T]: SchemaType
-}
+type TableType<T> = { [key in keyof T]: SchemaType }
 class SchemaType {
     type: string
     option: {
@@ -32,25 +30,7 @@ class SchemaType {
 export const text = () => new SchemaType("TEXT")
 export const id = () =>  new SchemaType("INTEGER").primary().autoIncrement()
 
-class SqlStatement {
-	query: Array<any>
-	args: Array<any>
-	constructor() {
-		this.query= []
-		this.args = []
-	}
-	toString(): string {
-		return this.query.reduce((acc, v)=> acc.concat(v).concat(" "), "").trim()
-	}
-	execute(): [string, Array<any>] {
-		const query = this.toString()
-		return [query, this.args]
-	}
-}
-
-type ObjItemOption<T> =  {
-    [key in keyof T]?: T[key];
-}
+type ObjItemOption<T> =  { [key in keyof T]?: T[key]; }
 class TableClass<T> {
     table: TableType<T>
     context: {
@@ -78,13 +58,12 @@ class TableClass<T> {
             ) VALUES ( ${Object.values(obj).map(()=> "?")} )`
         , Object.values(obj))
     }
-    async sync() {
+    async all() {
+        const res = await this.context.execute(`SELECT * FROM ${this.context.name}`, [])
+        return res
     }
 }
-
-type TableClassProxyResult<T> = {
-    [key in keyof T]: SchemaType;
-} & TableClass<T>
+type TableClassProxyResult<T> = { [key in keyof T]: SchemaType; } & TableClass<T>
 export const TableClassProxy = <T>(table: TableClass<T>): TableClassProxyResult<T> => {
     return new Proxy(table, {
         get: function(target, prop, receiver) {
@@ -95,20 +74,16 @@ export const TableClassProxy = <T>(table: TableClass<T>): TableClassProxyResult<
         }
     }) as any;
 }
-
 export const Table = <T>(table: TableType<T>) => TableClassProxy(new TableClass(table))
 
 type Table = TableClass<any>
 type DatabaseClassOptions = ObjItemOption<{
     execute: (query: string, args: any[]) => Promise<any>,
 }>
+type Tables<T> = { [key in keyof T]: Table; }
 export class DatabaseClass<T> {
-    tables: {
-        [key in keyof T]: Table;
-    }
-    constructor(obj: {
-        [key in keyof T]: Table;
-    }, options?: DatabaseClassOptions) {
+    tables: Tables<T>
+    constructor(obj: Tables<T>, options?: DatabaseClassOptions) {
         this.tables = obj
         this.map((table, key)=> {
             table.context = {
@@ -120,15 +95,8 @@ export class DatabaseClass<T> {
     map(fn: (table: Table, key: string, i: number)=> Promise<any> | any) {
         return Object.keys(this.tables).map((key, i) => fn(this.tables[key], key, i))
     }
-    async sync() {
-        return Promise.all(this.map((table)=> {
-            table.sync()
-        }))
-    }
 }
-type DatabaseClassProxyResult<T> = {
-    [key in keyof T]: T[key];
-} & DatabaseClass<T>
+type DatabaseClassProxyResult<T> = { [key in keyof T]: T[key]; } & DatabaseClass<T>
 export const DatabaseClassProxy = <T>(tables: DatabaseClass<T>): DatabaseClassProxyResult<T> => {
     return new Proxy(tables, {
         get(target, prop, receiver) {
