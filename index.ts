@@ -21,9 +21,9 @@ const db = Database({
     user,
     article,
 })
-
+//db.sync()
 db.user.get(1)
-db.article.get(1)
+//db.article.get(1)
 /*
 db.user.get(1)
 db.user.insert({
