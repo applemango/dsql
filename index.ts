@@ -12,7 +12,7 @@ const user = Table({
 })
 
 const article = Table({
-    id: id(),
+    like_id: id(),
     user_id: user.id,
     content: text(),
 })
@@ -21,10 +21,12 @@ const db = Database({
     user,
     article,
 })
+
+db.user.get(1)
+db.article.get(1)
 /*
 db.user.get(1)
 db.user.insert({
     email: "email@example.com",
     password: "password"
 })*/
-db.user.get(1)

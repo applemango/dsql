@@ -39,15 +39,16 @@ type ObjItemOption<T> =  {
 class TableClass<T> {
     table: TableType<T>
     context: {
-        execute: (query: string, args: any[]) => Promise<any>
+        execute: (query: string, args: any[]) => Promise<any>,
+        name: string,
     }
     constructor(table: TableType<T>) {
         this.table = table
     }
     get(key: any): ObjItemOption<T> {
-        this.context.execute("SELECT * FROM user WHERE user_id = ?", [key])
+        const primaryKey = Object.keys(this.table as any).filter((key) => this.table[key].option.primary)[0] as any
+        this.context.execute(`SELECT * FROM ${this.context.name} WHERE ${primaryKey} = ?`, [key])
         return undefined as any
-        //const primaryKey = Object.keys(this.table as any).filter((key) => this.table[key].option.primary)[0] as any
         //return `SELECT * FROM ${this.label} WHERE ${primaryKey} = ${key}`
     }
     insert(obj: ObjItemOption<T>) {
@@ -87,7 +88,8 @@ export const DatabaseClassProxy = (tables: DatabaseClass<Tables>) => {
                 target.tables[prop as any].context = {
                     execute: (query: string, args: any[]) => {
                         console.log("EXECUTE: ", query, args)
-                    }
+                    },
+                    name: prop as string
                 }
                 return Reflect.get(target.tables, prop, receiver);
             }
