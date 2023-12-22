@@ -32,6 +32,21 @@ class SchemaType {
 export const text = () => new SchemaType("TEXT")
 export const id = () =>  new SchemaType("INTEGER").primary().autoIncrement()
 
+class SqlStatement {
+	query: Array<any>
+	args: Array<any>
+	constructor() {
+		this.query= []
+		this.args = []
+	}
+	toString(): string {
+		return this.query.reduce((acc, v)=> acc.concat(v).concat(" "), "").trim()
+	}
+	execute(): [string, Array<any>] {
+		const query = this.toString()
+		return [query, this.args]
+	}
+}
 
 type ObjItemOption<T> =  {
     [key in keyof T]?: T[key];
@@ -93,13 +108,13 @@ export class DatabaseClass<T> {
             }
         })
     }
-    async map(fn: (table: Table, key: string, i: number)=> any) {
+    map(fn: (table: Table, key: string, i: number)=> Promise<any> | any) {
         return Object.keys(this.tables).map((key, i) => fn(this.tables[key], key, i))
     }
     async sync() {
-        return this.map((table)=> {
-            table
-        })
+        return Promise.all(this.map((table)=> {
+            table.sync()
+        }))
     }
 }
 type DatabaseClassProxyResult<T> = {
