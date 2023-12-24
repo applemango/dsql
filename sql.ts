@@ -29,6 +29,9 @@ class SchemaType {
 }
 export const text = () => new SchemaType("TEXT")
 export const id = () =>  new SchemaType("INTEGER").primary().autoIncrement()
+export const num = () => new SchemaType("INTEGER")
+export const bool = () => new SchemaType("BOOLEAN")
+export const varchar = (length: number) => new SchemaType(`VARCHAR(${length})`)
 
 type ObjItemOption<T> =  { [key in keyof T]?: T[key]; }
 class TableClass<T> {
