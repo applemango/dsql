@@ -86,11 +86,13 @@ type DatabaseClassOptions = ObjItemOption<{
 type Tables<T> = { [key in keyof T]: Table; }
 export class DatabaseClass<T> {
     tables: Tables<T>
+    execute: (query: string, args: any[]) => Promise<any>
     constructor(obj: Tables<T>, options?: DatabaseClassOptions) {
         this.tables = obj
+        this.execute =  options?.execute || (async (query: string, args: any[]) => {})
         this.map((table, key)=> {
             table.context = {
-                execute: options?.execute || (async (query: string, args: any[]) => {}),
+                execute: this.execute,
                 name: key
             }
         })
