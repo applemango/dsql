@@ -4,34 +4,40 @@ class SchemaType {
     option: {
         optional: boolean,
         primary: boolean,
-        autoIncrement: boolean
+        autoIncrement: boolean,
+        notNull: boolean,
     }
     constructor(type: string) {
         this.type = type;
         this.option = {
             optional: true,
             primary: false,
-            autoIncrement: false
+            autoIncrement: false,
+            notNull: false
         }
     }
-    optional() {
+    optional(): SchemaType {
         this.option.optional = true;
         return this
     }
-    primary() {
+    primary(): SchemaType {
         this.option.primary = true;
         return this
     }
-    autoIncrement() {
+    autoIncrement(): SchemaType {
         this.option.autoIncrement = true;
         return this
     }
+    nonNull(): SchemaType {
+        this.option.notNull = true;
+        return this;
+    }
 }
-export const text = () => new SchemaType("TEXT")
-export const id = () =>  new SchemaType("INTEGER").primary().autoIncrement()
-export const num = () => new SchemaType("INTEGER")
-export const bool = () => new SchemaType("BOOLEAN")
-export const varchar = (length: number) => new SchemaType(`VARCHAR(${length})`)
+export const text = (): SchemaType => new SchemaType("TEXT")
+export const id = (): SchemaType =>  new SchemaType("INTEGER").primary().autoIncrement()
+export const num = (): SchemaType => new SchemaType("INTEGER")
+export const bool = (): SchemaType => new SchemaType("BOOLEAN")
+export const varchar = (length: number): SchemaType => new SchemaType(`VARCHAR(${length})`)
 
 type ObjItemOption<T> =  { [key in keyof T]?: T[key]; }
 class TableClass<T> {
@@ -43,10 +49,10 @@ class TableClass<T> {
     constructor(table: TableType<T>) {
         this.table = table
     }
-    getPrimaryKey() {
+    getPrimaryKey(): string {
         return Object.keys(this.table).filter((key) => this.table[key].option.primary)[0]
     }
-    map(fn: (table: SchemaType, key: string, i: number)=> Promise<any> | any) {
+    map(fn: (table: SchemaType, key: string, i: number)=> Promise<any> | any): Array<Promise<any> | any> {
         return Object.keys(this.table).map((key, i) => fn(this.table[key], key, i))
     }
     async get(key: any): Promise<ObjItemOption<T>> {
@@ -61,7 +67,7 @@ class TableClass<T> {
             ) VALUES ( ${Object.values(obj).map(()=> "?")} )`
         , Object.values(obj))
     }
-    async all() {
+    async all(): Promise<Array<ObjItemOption<T>>> {
         const res = await this.context.execute(`SELECT * FROM ${this.context.name}`, [])
         return res
     }
@@ -77,19 +83,19 @@ export const TableClassProxy = <T>(table: TableClass<T>): TableClassProxyResult<
         }
     }) as any;
 }
-export const Table = <T>(table: TableType<T>) => TableClassProxy(new TableClass(table))
+export const Table = <T>(table: TableType<T>): TableClassProxyResult<T> => TableClassProxy(new TableClass(table))
 
 type Table = TableClass<any>
 type DatabaseClassOptions = ObjItemOption<{
-    execute: (query: string, args: any[]) => Promise<any>,
+    execute: (query: string, args?: any[]) => Promise<any>,
 }>
 type Tables<T> = { [key in keyof T]: Table; }
 export class DatabaseClass<T> {
     tables: Tables<T>
-    execute: (query: string, args: any[]) => Promise<any>
+    execute: (query: string, args?: any[]) => Promise<any>
     constructor(obj: Tables<T>, options?: DatabaseClassOptions) {
         this.tables = obj
-        this.execute =  options?.execute || (async (query: string, args: any[]) => {})
+        this.execute =  options?.execute || (async (query: string, args?: any[]) => {})
         this.map((table, key)=> {
             table.context = {
                 execute: this.execute,
@@ -97,7 +103,7 @@ export class DatabaseClass<T> {
             }
         })
     }
-    map(fn: (table: Table, key: string, i: number)=> Promise<any> | any) {
+    map(fn: (table: Table, key: string, i: number)=> Promise<any> | any): Array<Promise<any> | any> {
         return Object.keys(this.tables).map((key, i) => fn(this.tables[key], key, i))
     }
 }
@@ -112,4 +118,4 @@ export const DatabaseClassProxy = <T>(tables: DatabaseClass<T>): DatabaseClassPr
         },
     }) as any
 }
-export const Database = <T>(obj: T, options?: DatabaseClassOptions) => DatabaseClassProxy<T>(new DatabaseClass(obj as any, options))
+export const Database = <T>(obj: T, options?: DatabaseClassOptions): DatabaseClassProxyResult<T> => DatabaseClassProxy<T>(new DatabaseClass(obj as any, options))
