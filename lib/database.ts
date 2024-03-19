@@ -1,0 +1,35 @@
+import { ObjItemOption } from "../types/utils"
+import { Table, Tables } from "./table"
+
+type DatabaseClassOptions = ObjItemOption<{
+    execute: (query: string, args?: any[]) => Promise<any>,
+}>
+export class DatabaseClass<T> {
+    tables: Tables<T>
+    execute: (query: string, args?: any[]) => Promise<any>
+    constructor(obj: Tables<T>, options?: DatabaseClassOptions) {
+        this.tables = obj
+        this.execute =  options?.execute || (async (query: string, args?: any[]) => {})
+        this.map((table, key)=> {
+            table.context = {
+                execute: this.execute,
+                name: key
+            }
+        })
+    }
+    map(fn: (table: Table, key: string, i: number)=> Promise<any> | any): Array<Promise<any> | any> {
+        return Object.keys(this.tables).map((key, i) => fn(this.tables[key], key, i))
+    }
+}
+type DatabaseClassProxyResult<T> = { [key in keyof T]: T[key]; } & DatabaseClass<T>
+export const DatabaseClassProxy = <T>(tables: DatabaseClass<T>): DatabaseClassProxyResult<T> => {
+    return new Proxy(tables, {
+        get(target, prop, receiver) {
+            if(prop in tables.tables) {
+                return Reflect.get(target.tables, prop, receiver);
+            }
+            return Reflect.get(target, prop, receiver);
+        },
+    }) as any
+}
+export const Database = <T>(obj: T, options?: DatabaseClassOptions): DatabaseClassProxyResult<T> => DatabaseClassProxy<T>(new DatabaseClass(obj as any, options))

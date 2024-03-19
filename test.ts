@@ -1,5 +1,6 @@
-import { Database, Table, id, text } from ".";
+//import { Database, Table, id, text } from ".";
 import { Database as DatabaseCore } from "bun:sqlite";
+import Database, { Table, id, text } from "./mod";
 
 const database = new DatabaseCore("db.sqlite");
 
