@@ -5,6 +5,12 @@ export class SchemaType {
         primary: boolean,
         autoIncrement: boolean,
         notNull: boolean,
+        isForagingKey: boolean,
+        foragingTableName: string,
+        foragingTableId: string,
+        foragingColumnName: string,
+        tableName: string,
+        key: string
     }
     constructor(type: string) {
         this.type = type;
@@ -12,7 +18,13 @@ export class SchemaType {
             optional: true,
             primary: false,
             autoIncrement: false,
-            notNull: false
+            notNull: false,
+            isForagingKey: false,
+            foragingTableName: "",
+            foragingTableId: "",
+            foragingColumnName: "",
+            tableName: "",
+            key: ""
         }
     }
     optional(): SchemaType {
@@ -30,6 +42,13 @@ export class SchemaType {
     nonNull(): SchemaType {
         this.option.notNull = true;
         return this;
+    }
+    copy() {
+        const copy = new SchemaType(this.type)
+        copy.option = {
+            ...this.option
+        }
+        return copy
     }
 }
 export const text = (): SchemaType => new SchemaType("TEXT")
