@@ -27,23 +27,23 @@ export class SchemaType {
             key: ""
         }
     }
-    optional(): SchemaType {
+    optional(): this {
         this.option.optional = true;
         return this
     }
-    primary(): SchemaType {
+    primary(): this {
         this.option.primary = true;
         return this
     }
-    autoIncrement(): SchemaType {
+    autoIncrement(): this {
         this.option.autoIncrement = true;
         return this
     }
-    nonNull(): SchemaType {
+    nonNull(): this {
         this.option.notNull = true;
         return this;
     }
-    copy() {
+    copy(): SchemaType {
         const copy = new SchemaType(this.type)
         copy.option = {
             ...this.option
