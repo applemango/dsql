@@ -15,16 +15,38 @@ export class DatabaseClass<T> {
                 execute: this.execute,
                 name: key
             }
+            table.map((type)=> {
+                type.option.tableName = key
+                if(type.option.foragingTableId) {
+                    type.option.foragingTableName = this
+                        .map((table)=> table)
+                        .find((table)=> table.uuid == type.option.foragingTableId)
+                        ?.context.name
+                }
+            })
         })
     }
     map(fn: (table: Table, key: string, i: number)=> Promise<any> | any): Array<Promise<any> | any> {
         return Object.keys(this.tables).map((key, i) => fn(this.tables[key], key, i))
+    }
+    init() {
+        this.map((table)=> {
+            table.init()
+        })
+    }
+    destroy() {
+        this.map((table)=> {
+            table.drop()
+        })
     }
 }
 type DatabaseClassProxyResult<T> = { [key in keyof T]: T[key]; } & DatabaseClass<T>
 export const DatabaseClassProxy = <T>(tables: DatabaseClass<T>): DatabaseClassProxyResult<T> => {
     return new Proxy(tables, {
         get(target, prop, receiver) {
+            /*
+             * if database.[table name]
+             */
             if(prop in tables.tables) {
                 return Reflect.get(target.tables, prop, receiver);
             }
@@ -32,4 +54,6 @@ export const DatabaseClassProxy = <T>(tables: DatabaseClass<T>): DatabaseClassPr
         },
     }) as any
 }
-export const Database = <T>(obj: T, options?: DatabaseClassOptions): DatabaseClassProxyResult<T> => DatabaseClassProxy<T>(new DatabaseClass(obj as any, options))
+export const Database = <T>(obj: T, options?: DatabaseClassOptions): DatabaseClassProxyResult<T> => {
+    return DatabaseClassProxy<T>(new DatabaseClass(obj as any, options))
+}
